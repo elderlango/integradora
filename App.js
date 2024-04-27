@@ -7,7 +7,7 @@ import { loadFonts } from './styles/fonts';
 import { View, ActivityIndicator, Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
-global.ipDireccion = '172.20.30.201';
+global.ipDireccion = '192.168.3.30';
 global.categories = ['GAS', 'ULTRASONICO', 'TEMPERATURA'];
 
 const App = () => {

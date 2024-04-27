@@ -45,7 +45,6 @@ const GraphicScreen = ({ navigation }) => {
 
         if (adminDevicesData && adminDevicesData.length > 0) {
           const deviceId = adminDevicesData[0]._id;
-
           let mappedSensorType = '';
           switch(sensorType.toUpperCase()) {
               case 'GAS': mappedSensorType = 'gasDetector'; break;
@@ -60,6 +59,7 @@ const GraphicScreen = ({ navigation }) => {
           //console.log(endpoint2)
           const sensorDataResponse = await fetch(endpoint2, { method: 'GET', headers });
           const sensorData = await sensorDataResponse.json();
+          console.log(sensorData)
 
           //console.log(`Data for ${mappedSensorType}: ${sensorData}`)
 
@@ -237,10 +237,9 @@ const GraphicScreen = ({ navigation }) => {
     })
   ) : 
   (
-    
-
    graphData[selectedCategory] && (
       <View style={[{...styles.chartContainer, borderBottomColor: categoriesIconColor[categories.indexOf(selectedCategory)]}]}>
+        <Text style={{ textAlign: 'center',color:categoriesIconColor[categories.indexOf(selectedCategory)],fontWeight:'bold',fontSize:20 }}>{selectedCategory}</Text>
         <BarChart
           data={getChartData(graphData[selectedCategory], selectedCategory)}
           width={screenWidth}

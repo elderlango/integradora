@@ -64,17 +64,17 @@ const HomeScreenAdmin = ({ navigation }) => {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.featureCardsContainer}>
               <TouchableOpacity style={{...(styles.featureButton), backgroundColor:'#34373E' }}
-               onPress={ () => {navigation.navigate('Graphic')}}>
+               onPress={ () => {navigation.navigate('EditProfile')}}>
                 <FontAwesome name="bar-chart" size={24} color={theme === 'light' ? '#F5BE2E' : '#F5BE2E'} />
                 <Text style={{...(styles.featureCardTitle), color:'#F5BE2E' }}>Perfil</Text>
               </TouchableOpacity>
               <TouchableOpacity style={{...(styles.featureButton), backgroundColor:'#34373E' }}
-               onPress={ () => {navigation.navigate('Cards')}}>
+               onPress={ () => {navigation.navigate('Graphic')}}>
                 <FontAwesome name="warning" size={24} color={theme === 'light' ? '#F5BE2E' : '#F5BE2E'} />
                 <Text style={{...(styles.featureCardTitle), color:'#F5BE2E' }}>Graficas</Text>
               </TouchableOpacity>
               <TouchableOpacity style={{...(styles.featureButton), backgroundColor:'#34373E' }}
-              onPress={ () => {navigation.navigate('EditProfile')}}>
+              onPress={ () => {navigation.navigate('Cards')}}>
                 <FontAwesome name="edit" size={24} color={theme === 'light' ? '#F5BE2E' : '#F5BE2E'} />
                 <Text style={{...(styles.featureCardTitle), color:'#F5BE2E' }}>Estado y Avisos</Text>
               </TouchableOpacity>
