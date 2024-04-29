@@ -48,6 +48,7 @@ const GraphicScreen = ({ navigation }) => {
           let mappedSensorType = '';
           switch(sensorType.toUpperCase()) {
               case 'GAS': mappedSensorType = 'gasDetector'; break;
+              //case 'GAS': mappedSensorType = 'gasDetector'; console.log(mappedSensorType); break;
               case 'ULTRASONICO': mappedSensorType = 'ultrasonic'; break;
               case 'TEMPERATURA': mappedSensorType = 'temperature'; break;
               case 'HUMEDAD': mappedSensorType = 'humidity'; break;
@@ -58,14 +59,16 @@ const GraphicScreen = ({ navigation }) => {
           //console.log(endpoint2)
           const sensorDataResponse = await fetch(endpoint2, { method: 'GET', headers });
           const sensorData = await sensorDataResponse.json();
+          console.log(sensorData)
 
-          console.log(`Data for ${mappedSensorType}: ${sensorData}`)
+          //console.log(`Data for ${mappedSensorType}: ${sensorData}`)
 
           if (!sensorDataResponse.ok) {
             throw new Error(sensorData.message || `Failed to fetch data for sensor: ${sensorType}`);            
           }
 
           if (sensorData && sensorData.length > 0) {
+            //console.log(sensorData)
             setGraphData(prevData => ({
               ...prevData,
               [sensorType]: sensorData
@@ -170,7 +173,7 @@ const GraphicScreen = ({ navigation }) => {
         })
       ).current;
 
-      return (
+    return (
       <SafeAreaView style={{...(styles.backgroundImage),...(styles.container)}}>
         <ImageBackground source={theme === 'light' ? require(light) : require(dark)} 
              style={{...(styles.backgroundImage),...(styles.container)}}

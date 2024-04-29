@@ -1,52 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, FlatList, TouchableOpacity, Platform, StatusBar, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { SafeAreaView, View, Text, FlatList, TouchableOpacity, ScrollView, ImageBackground, PanResponder,Animated } from 'react-native';
 import { Card } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import styles from './cardsScreen.styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import BackButton from '../../components/backButtonc';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ThemeContext } from "../../components/theme/themeManager";
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import Menu from '../../components/menu/menu';
 
-const categories = ['ALL', 'GAS', 'ULTRASONICO', 'TEMPERATURA', 'HUMEDAD'];
-
-/* async function registerForPushNotificationsAsync() {
-  let token;
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-  if (finalStatus !== 'granted') {
-    alert('Failed to get push token for push notification!');
-    return;
-  }
-  token = (await Notifications.getExpoPushTokenAsync()).data;
-  console.log(token);
-
-  if (Platform.OS === 'android') {
-    Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    });
-  }
-
-  return token;
-} */
+const categories = ['TODOS', 'GAS', 'ULTRASONICO', 'TEMPERATURA', 'HUMEDAD'];
+const categoriesIcon = ['layer-group','cloud', 'wave-square', 'temperature-high', 'water'];
+const categoriesIconColor = ['#DE784E','#A8A6AC', '#ffd128', '#FF5AA0', '#34c1fd'];
 
 const CardsScreen = ({ navigation }) => {
   const [messages, setMessages] = useState([]);
-  const [categories, setCategories] = useState([]);
-
-  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [selectedCategory, setSelectedCategory] = useState('TODOS');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [categoryCounts, setCategoryCounts] = useState({});
+  const [menuVisible, setMenuVisible] = useState(false);
+  
+  const menuPosition = useRef(new Animated.ValueXY()).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (event, gesture) => {
+        menuPosition.setValue({ x: gesture.dx, y: gesture.dy });
+      },
+      
+      onPanResponderRelease: (event, gesture) => {
+        if (gesture.dx > 50) {
+          setMenuVisible(true);
+        } else {
+          setMenuVisible(false);
+        }
+        Animated.spring(menuPosition, {
+          toValue: { x: 0, y: 0 },
+          useNativeDriver: false,
+        }).start();
+      },
+    })
+  ).current;
 
   const sensorTypeMapping = {
-    'ALL': ['gasDetector', 'ultrasonic', 'temperature','humidity'],
+    'TODOS': ['gasDetector', 'ultrasonic', 'temperature','humidity'],
     'GAS': 'gasDetector',
     'ULTRASONICO': 'ultrasonic',
     'TEMPERATURA': 'temperature',
@@ -73,13 +73,12 @@ const CardsScreen = ({ navigation }) => {
           throw new Error('No devices found for this user');
         }
         const deviceId = deviceResponse.data[0]._id; // Asumiendo que el usuario tiene al menos un dispositivo
-        const mappedSensorTypes = selectedCategory === 'ALL' ? sensorTypeMapping['ALL'] : [sensorTypeMapping[selectedCategory]]; // Asegúrate de que esto sea un array
+        const mappedSensorTypes = selectedCategory === 'TODOS' ? sensorTypeMapping['TODOS'] : [sensorTypeMapping[selectedCategory]]; // Asegúrate de que esto sea un array
+
 
         let allAlerts = [];
-        let allCategories = [];
-
-        
         for (const sensorType of mappedSensorTypes) {
+          console.log(deviceId)
           const alertsResponse = await axios.get(`http://${global.ipDireccion}:3000/api/devices/${deviceId}/sensors/${sensorType}/alerts`, {
             headers: { Authorization: `Bearer ${userToken}` },
           });
@@ -90,48 +89,19 @@ const CardsScreen = ({ navigation }) => {
             alertType: alert.messageType,
             value: alert.message,
           }));
-           //console.log(sensorType)
-           //console.log(sensorAlerts)
-           //gasDetector,ultrasonic,temperature
-           allAlerts = [...allAlerts, ...sensorAlerts];
-           allCategories = [...allCategories, ...sensorAlerts];
+          //console.log(sensorAlerts)
 
-          }
-
-          
-// Create an object to store the counts for each category
-// const categoryCounts = {};
-
-// // Loop through the sensorAlerts array to count the number of objects for each category
-// categories.forEach(alert => {
-//   // Check if the category exists in the categoryCounts object
-//   if (categoryCounts.hasOwnProperty(alert.category)) {
-//     // Increment the count for the corresponding category
-//     categoryCounts[alert.category]++;
-//   } else {
-//     // Initialize the count for the category
-//     categoryCounts[alert.category] = 1;
-//   }
-// });
-
-//   console.log(categoryCounts);
-//   // console.log(categoryCounts.count);
-
-
-//   Object.entries(categoryCounts).forEach(([category, count]) => {
-//     // console.log(`${category} ${count} warnings`);
-//   });
-
+          allAlerts = [...allAlerts, ...sensorAlerts];
+        }
 
         setMessages(allAlerts);
-
       } catch (error) {
         console.error('Error fetching sensor alerts:', error);
         setError(error.message || 'An error occurred');
       } finally {
         setIsLoading(false);
       }
-    };
+  };
 
     loadSensorAlerts();
   }, [selectedCategory]);
@@ -140,116 +110,128 @@ const CardsScreen = ({ navigation }) => {
     setSelectedCategory(category);
   };
 
-
-  // useEffect(() => {
-  //   // Loop through the sensorAlerts array to count the number of objects for each category
-  //   messages.forEach(alert => {
-  //     // Check if the category exists in the categoryCounts object
-  //     if (categoryCounts.hasOwnProperty(alert.category)) {
-  //       // Increment the count for the corresponding category
-  //       setCategoryCounts(prevCounts => ({
-  //         ...prevCounts,
-  //         [alert.category]: prevCounts[alert.category] + 1
-  //       }));
-  //     } else {
-  //       // Initialize the count for the category
-  //       setCategoryCounts(prevCounts => ({
-  //         ...prevCounts,
-  //         [alert.category]: 1
-  //       }));
-  //     }
-  //   });
-  // }, []);
-  
   const filteredMessages = messages; // Si ya están correctamente filtrados, esto podría ser todo lo que necesitas
+  
+  const { theme } = useContext(ThemeContext);
+  const dark ='../../assets/images/tile_background4.png';
+  const light ='../../assets/images/tile_background9.png';
+  
 
   return (
-    <SafeAreaView style={[styles.safeArea, { marginTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight }]}>
-      <Header navigation={navigation} />
-      <CategoriesMenu categories={categories} selectedCategory={selectedCategory} onSelectCategory={handleCategorySelect} categoryCounts={categoryCounts} />
-      <FlatList
-        data={filteredMessages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <OfferCard {...item}/>}
-      />
+    <SafeAreaView style={{...(styles.safeArea),...(styles.backgroundImage),...(styles.container),
+    //  ...{ marginTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight }
+     }}>
+      <ImageBackground source={theme === 'light' ? require(light) : require(dark)} 
+             style={{...(styles.backgroundImage),...(styles.container)}}
+      >  
+        <Header navigation={navigation} panResponder={panResponder}/>
+        {menuVisible && (<Menu navigation={navigation} style={menuPosition.getLayout()}  onClose={(isVisible) => setMenuVisible(isVisible)}/>)} 
+        <CategoriesMenu categories={categories} categoriesIcon={categoriesIcon} categoriesIconColor={categoriesIconColor} selectedCategory={selectedCategory} onSelectCategory={handleCategorySelect} />
+        <FlatList data={filteredMessages}  keyExtractor={(item) => item.id} renderItem={({ item }) => <OfferCard {...item}/>}/>
+      </ImageBackground>
     </SafeAreaView>
-  );
-};
+    );
+  };
 
-  const Header = ({ navigation }) => (
-    <View >
+const Header = ({ navigation, panResponder }) => (
+  <View style={styles.headerContainer} {...panResponder.panHandlers}>
     <View style={styles.headerContainer}>
-      <Text style={styles.headerTitle}>OFFERS</Text>
-      {/* <Icon name="search" size={24} color="#000" onPress={() => {}} /> */}
+      <Text style={styles.headerTitle}>Estados y Avisos</Text>
     </View>
-          <BackButton navigation={navigation}/>
-          </View>
+    <BackButton navigation={navigation}/>
+  </View>
+);
 
-  );
-
-  const CategoriesMenu = ({ categories, selectedCategory, onSelectCategory,categoryCounts}) => (
+  const CategoriesMenu = ({ categories, selectedCategory, categoriesIcon, categoriesIconColor, onSelectCategory }) => (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesContainer}>
-      {categories.map((category) => (
-        <TouchableOpacity
-          key={category}
-          style={[
-            styles.categoryButton,
-            selectedCategory === category && styles.categoryButtonSelected,
-          ]}
-          onPress={() => onSelectCategory(category)}
-        >
-          <Text style={[
-            styles.categoryButtonText,
-            selectedCategory === category && styles.categoryButtonTextSelected,
-          ]}>
-            {category} 
-            {categoryCounts[category] ? `${categoryCounts[category]} warnings` : ''}
-          </Text>
+      {categories.map((category) => {
+        const iconName = categoriesIcon[categories.indexOf(category)];
+        const iconColor = categoriesIconColor[categories.indexOf(category)];
+
+        return (
+          <TouchableOpacity key={category} onPress={() => onSelectCategory(category)}
+            style={[styles.categoryButton, selectedCategory === category && 
+            {...styles.categoryButtonSelected, borderBottomColor: iconColor}]}
+            >
+            <Text 
+            style={[styles.categoryButtonText, selectedCategory === category && {...styles.categoryButtonTextSelected, color: iconColor}]}
+            >
+              {category}
+            </Text>
+            {/* {selectedCategory === category && ( */}
+            <View 
+            style={[styles.categoryIcon, selectedCategory === category && {...styles.categoryIconSelected, shadowColor: '#ffd128' }]}
+            > 
+              <FontAwesome5 name={iconName} size={30} color={iconColor} />
+            </View>
+            {/* )} */}
         </TouchableOpacity>
-      ))}
+        );
+      })}
     </ScrollView>
   );
-  
+    //history, sliders, bug, info-circle
+
+
+
+    /*<TouchableOpacity key={category} onPress={() => onSelectCategory(category)}>
+    <LinearGradient colors={['#8c9494', '#5d5e69', '#1b1e28']} locations={[0, 0.3, 1]}
+      style={[styles.categoryButton, selectedCategory === category && styles.categoryButtonSelected]}
+    >
+      <Text style={[styles.categoryButtonText, selectedCategory === category && styles.categoryButtonTextSelected]}>
+        {category}
+      </Text>
+      <View 
+      style={[styles.categoryIcon, selectedCategory === category && {...styles.categoryIconSelected, shadowColor: iconColor}]}
+    >
+        <FontAwesome5 name={iconName} size={30} color={iconColor} />
+        </View>
+    </LinearGradient>
+  </TouchableOpacity>*/
+
+
+
+
+
 
   const getAlertStyles = (alertType) => {
     switch (alertType) {
       case "Alerta":
-        return { backgroundColor: 'red', icon: 'times-circle', textColor: '#F7F6FA', buttonText: 'Resolver' };
+        return { borderColor: '#fb5b5a', icon: 'times-rectangle', backgroundColor: '#fb5b5a', iconColor: '#fb5b5a', buttonText: 'Resolver' };
       case "Advertencia":
-        return { backgroundColor: 'orange', icon: 'exclamation-triangle', textColor: '#000', buttonText: 'Detalles' };
+        return { borderColor: '#F5BE2E', icon: 'warning', backgroundColor: '#F5BE2E', iconColor: '#F5BE2E', buttonText: 'Detalles' };
       case "Error":
-        return { backgroundColor: 'blue', icon: 'info-circle', textColor: '#F7F6FA', buttonText: 'Más Info' };
+        return { borderColor: '#6A969D', icon: 'bug', backgroundColor: '#6A969D', iconColor: '#6A969D', buttonText: 'Más Info' };
       default:
         // Un estilo por defecto para tipos de alerta no esperados
-        return { backgroundColor: 'grey', icon: 'question-circle', textColor: '#F7F6FA', buttonText: '' };
+        return { borderColor: 'grey', icon: 'question-circle', buttonText: '' };
     }
   };
-  
 
   const OfferCard = ({ id, category, alertType, value, timestamp }) => {
-    const { backgroundColor, icon, textColor, buttonText } = getAlertStyles(alertType);
+    const { borderColor, icon, iconColor, backgroundColor, buttonText } = getAlertStyles(alertType);
     const formattedTimestamp = new Date(timestamp).toLocaleString();
   
     const humanReadableCategory = {
       gasdetector: 'GAS',
       ultrasonic: 'ULTRASONICO',
       temperature: 'TEMPERATURA',
-      humidity: 'HUMEDAD',
+      humidity:'HUMEDAD',
     }[category.toLowerCase()] || 'Desconocido';
   
     return (
-      <Card containerStyle={[styles.cardContainer, { backgroundColor }]}>
+      <Card containerStyle={[styles.cardContainer, { borderColor }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Icon name={icon} size={30} color={textColor} />
+          <Icon name={icon} size={40} color={iconColor} />
           <View style={{ marginLeft: 10 }}>
+            <Text style={styles.cardTimestamp}>{formattedTimestamp}</Text>
             <Text style={styles.cardTitle}>{humanReadableCategory}</Text>
             <Text style={styles.cardValue}>{value}</Text>
             <Text style={styles.cardValue}>{alertType}</Text>
-            <Text style={styles.cardTimestamp}>{formattedTimestamp}</Text>
           </View>
         </View>
         {buttonText && (
-          <TouchableOpacity style={styles.cardActionButton}>
+          <TouchableOpacity style={[styles.cardActionButton, { backgroundColor }]}>
             <Text style={styles.cardActionButtonText}>{buttonText}</Text>
           </TouchableOpacity>
         )}
@@ -263,7 +245,6 @@ const copyToClipboard = (code) => {
   };
 
 export default CardsScreen;
-
 
 /* /hugo/humo/max
 {

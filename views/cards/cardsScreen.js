@@ -78,7 +78,7 @@ const CardsScreen = ({ navigation }) => {
 
         let allAlerts = [];
         for (const sensorType of mappedSensorTypes) {
-          //console.log(sensorType)
+          console.log(deviceId)
           const alertsResponse = await axios.get(`http://${global.ipDireccion}:3000/api/devices/${deviceId}/sensors/${sensorType}/alerts`, {
             headers: { Authorization: `Bearer ${userToken}` },
           });
